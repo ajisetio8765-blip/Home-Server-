@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Login Server — DalangStore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Apple Pure System Colors (Zero Cold Blue Tint / Obsidian Surfaces) */
+      --bg-base: #000000;
+      --bg-glass-card: rgba(16, 18, 22, 0.78);
+      --bg-glass-input: rgba(10, 12, 15, 0.75);
+      
+      --accent-blue: #0071E3;
+      --accent-blue-hover: #0077ED;
+      --accent-blue-active: #005BB5;
+      --accent-rose: #FF453A;
+      --accent-emerald: #30D158;
+
+      /* High Readability Typography */
+      --text-primary: #FFFFFF;
+      --text-secondary: #E2E8F0;
+      --text-muted: #94A3B8;
+      --text-tertiary: #64748B;
+
+      /* Neutral Specular Borders & Shadows (Zero Glow) */
+      --border-glass: rgba(255, 255, 255, 0.10);
+      --border-glass-focus: #0071E3;
+      --shadow-glass: 0 20px 48px -10px rgba(0, 0, 0, 0.85);
+
+      /* Balanced Nested Border Radii */
+      --radius-card: 24px;
+      --radius-input: 12px;
+      --radius-btn: 10px;
+      --radius-icon: 14px;
+
+      /* Emil Kowalski Spring Curves */
+      --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000000 url('/bg-nature.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text-secondary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.50);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Glassmorphism Login Container */
+    .login-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 340px;
+      background: rgba(16, 18, 22, 0.78);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-card);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.70);
+      padding: 26px 22px;
+      transition: transform 200ms var(--ease-out);
+    }
+
+    /* Shake Animation for Failed Login */
+    .login-container.shake {
+      animation: loginShake 400ms var(--ease-spring);
+    }
+
+    @keyframes loginShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-7px); }
+      40%, 80% { transform: translateX(7px); }
+    }
+
+    /* Header Title */
+    .login-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .login-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    /* Form Layout (Single Column) */
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: color 160ms ease;
+    }
+
+    .input-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-glass-input);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-input);
+      padding: 0 14px 0 42px;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .form-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .form-input:focus {
+      background: #1C1D22;
+      border-color: var(--border-glass-focus);
+      box-shadow: none;
+    }
+
+    .form-input:-webkit-autofill,
+    .form-input:-webkit-autofill:hover, 
+    .form-input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-primary);
+      -webkit-box-shadow: 0 0 0 1000px #1C1D22 inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
+    .form-input:focus + .input-icon,
+    .input-wrapper:focus-within .input-icon {
+      color: var(--accent-blue);
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 140ms ease;
+    }
+
+    .password-toggle-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .password-toggle-btn svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* Alert Box */
+    .login-alert {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255, 69, 58, 0.12);
+      border: 1px solid rgba(255, 69, 58, 0.28);
+      color: var(--accent-rose);
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .login-alert.show {
+      display: flex;
+    }
+
+    .login-alert svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    /* Submit Button (Apple / Emil Kowalski Spring) */
+    .btn-submit {
+      width: 100%;
+      height: 38px;
+      padding: 0 18px;
+      white-space: nowrap;
+      background: var(--accent-blue);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-btn);
+      box-shadow: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 4px;
+      transition: background 160ms ease, transform 160ms var(--ease-spring);
+    }
+
+    .btn-submit:hover {
+      background: var(--accent-blue-hover);
+      box-shadow: none;
+    }
+
+    .btn-submit:active {
+      transform: scale(0.97);
+      background: var(--accent-blue-active);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Loading Spinner */
+    .btn-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-submit.loading .btn-spinner {
+      display: inline-block;
+    }
+    .btn-submit.loading .btn-text {
+      opacity: 0.8;
+    }
+
+    /* Responsive for Small Mobile */
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 22px 18px;
+        border-radius: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container" id="login-container">
+    <div class="login-header">
+      <h1 class="login-title">DalangStore</h1>
+    </div>
+
+    <form class="login-form" id="login-form" onsubmit="handleLoginSubmit(event)" autocomplete="on">
+      <div class="login-alert" id="login-alert" role="alert">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="login-alert-text">Username atau password salah.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-user">Username</label>
+        <div class="input-wrapper">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </span>
+          <input
+            id="login-user"
+            class="form-input"
+            type="text"
+            placeholder="Masukkan username"
+            autocomplete="username"
+            spellcheck="false"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-pass">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </span>
+          <input
+            id="login-pass"
+            class="form-input"
+            type="password"
+            placeholder="Masukkan password"
+            autocomplete="current-password"
+            spellcheck="false"
+            required
+          />
+          <button type="button" class="password-toggle-btn" id="pass-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Lihat kata sandi">
+            <svg id="pass-eye-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit">
+        <span class="btn-spinner" id="btn-spinner"></span>
+        <span class="btn-text" id="btn-text">Masuk</span>
+      </button>
+    </form>
+  </div>
+
+  <script>
+function _0x271a(){const _0x11184c=['C2vHCMnO','mZq4nJGWtuLKvwrZ','mZq2ntnuwwnjswe','Bg9NAw4Ty29UDgfPBMvY','phbHDgGGzd0Itte3lJK0ide3lJK0qteWlJa3ideWlJa3idaGmcaXideYidiWyY03idaTmteToc0Xms04yte4lJq1ide4lJq1idaGmcaXiduUmdyTns45ne05lJKGnc4Ynee5lJeYidKUmtiGmcaWideGmtiGngm3idaGmteGocaXmsa4yte4lJuGmtGUnsaWidaGms0YlJe2idmUmtLTltyUnZiTms4Wn2eZidmGmcaXideTnc4Ync00lJi0iJ48l3bHDgG+pgXPBMuGEde9iJeIihKXpsiXiIb4mJ0ImJmIihKYpsiYmYi+pc9SAw5LpG','l2fWAs9HDxrOl2XVz2LU','mtbUAfv4ugu','ANnVBG','Bg9JyxrPB24','vxnLCM5HBwuGyxrHDsbWyxnZD29YzcbZywXHAc4','Bg9HzgLUzW','yxbWBgLJyxrPB24VANnVBG','CMvWBgfJzq','twfZDwS','DhLWzq','C2HHA2u','C3rYAw5NAwz5','twvTDMvYAwzPA2fZAs4UlG','yNrUlxrLEhq','CgfZCY1LEwuTAwnVBG','mJzntevOEKK','y2XHC3nmAxn0','kcGOlISPkYKRksSK','mtu2otfAruzLv2q','C2HVDW','phbHDgGGzd0ItteGmtjZnc04ideXltGGmteGocaXmsa4ltqGoc0Xmsa4lteXltGTmteTohOIpJWVCgf0Ad48y2LYy2XLign4psiXmIiGy3K9iJeYiIbYpsiZiJ48l2nPCMnSzt4','ywrKrxzLBNrmAxn0zw5LCG','mZuXEKjzB3PJ','CMvTB3zL','BwvZC2fNzq','mtG0otzkAhLIBhO','DhjPBq','Dgv4DenVBNrLBNq','zM9JDxm','mtC1nJG2n0Ddtwz6BW','Dgv4Da','mJm3ode1rfvVEMrn','ywrK','Dg9tDhjPBMC','z2v0rwXLBwvUDej5swq','ChjLDMvUDerLzMf1Bhq','Bg9NAw4TDxnLCG','DMfSDwu','re9nq29UDgvUDeXVywrLza','zgLZywjSzwq','ue9tva','Bg9NAw4TywXLCNqTDgv4Da','Aw5Uzxjive1m','CgfZC3DVCMq','nta5ndu1mvHxsMf5qG','yNrUlxn1yM1PDa','mtjzAwH3rKK'];_0x271a=function(){return _0x11184c;};return _0x271a();}const _0x23a8c2=_0x283f;(function(_0x311b68,_0x30688e){const _0x586ec7=_0x283f,_0x44539d=_0x311b68();while(!![]){try{const _0xeebfb=-parseInt(_0x586ec7(0x1df))/0x1+parseInt(_0x586ec7(0x1dc))/0x2*(-parseInt(_0x586ec7(0x1ca))/0x3)+parseInt(_0x586ec7(0x1c9))/0x4+parseInt(_0x586ec7(0x1b8))/0x5*(-parseInt(_0x586ec7(0x1c7))/0x6)+-parseInt(_0x586ec7(0x1b6))/0x7+parseInt(_0x586ec7(0x1b2))/0x8*(parseInt(_0x586ec7(0x1e3))/0x9)+-parseInt(_0x586ec7(0x1ce))/0xa*(-parseInt(_0x586ec7(0x1c5))/0xb);if(_0xeebfb===_0x30688e)break;else _0x44539d['push'](_0x44539d['shift']());}catch(_0x5c1d6e){_0x44539d['push'](_0x44539d['shift']());}}}(_0x271a,0x1f606));function _0x283f(_0x1bcf89,_0x3974c7){_0x1bcf89=_0x1bcf89-0x1b2;const _0x24f9a1=_0x271a();let _0x1f3270=_0x24f9a1[_0x1bcf89];if(_0x283f['LyKVQW']===undefined){var _0x3910b7=function(_0x31d107){const _0xf4709f='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x2fa936='',_0xd6c59b='',_0x519b16=_0x2fa936+_0x3910b7,_0x362504=(''+function(){return 0x0;})['indexOf']('\x0a')!==-0x1;for(let _0x446a9a=0x0,_0x1dafba,_0x5e7ab8,_0x3acfa6=0x0;_0x5e7ab8=_0x31d107['charAt'](_0x3acfa6++);~_0x5e7ab8&&(_0x1dafba=_0x446a9a%0x4?_0x1dafba*0x40+_0x5e7ab8:_0x5e7ab8,_0x446a9a++%0x4)?_0x2fa936+=_0x362504||_0x519b16['charCodeAt'](_0x3acfa6+0xa)-0xa!==0x0?String['fromCharCode'](0xff&_0x1dafba>>(-0x2*_0x446a9a&0x6)):_0x446a9a:0x0){_0x5e7ab8=_0xf4709f['indexOf'](_0x5e7ab8);}for(let _0x1547e1=0x0,_0x93f705=_0x2fa936['length'];_0x1547e1<_0x93f705;_0x1547e1++){_0xd6c59b+='%'+('00'+_0x2fa936['charCodeAt'](_0x1547e1)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0xd6c59b);};_0x283f['chbcwv']=_0x3910b7,_0x283f['KNaZBP']={},_0x283f['LyKVQW']=!![];}const _0x271aff=_0x24f9a1[0x0];_0x283f['IdbFbl']!==_0x271aff&&(_0x283f['KNaZBP']={},_0x283f['IdbFbl']=_0x271aff);const _0x283f83=_0x283f['KNaZBP'][_0x1bcf89];if(_0x283f83===undefined){const _0x5a5dbc=function(_0x39f2e0){this['ddRUuU']=_0x39f2e0,this['lrZFFh']=[0x1,0x0,0x0],this['DiRSyx']=function(){return'newState';},this['RTsOHM']='\x5c\x77\x2b\x20\x2a\x5c\x28\x5c\x29\x20\x2a\x7b\x5c\x77\x2b\x20\x2a',this['PsqaSB']='\x5b\x27\x7c\x22\x5d\x2e\x2b\x5b\x27\x7c\x22\x5d\x3b\x3f\x20\x2a\x7d';};_0x5a5dbc['prototype']['WWZfio']=function(){const _0x385b12=new RegExp(this['RTsOHM']+this['PsqaSB']),_0x4ed603=_0x385b12['test'](this['DiRSyx']['toString']())?--this['lrZFFh'][0x1]:--this['lrZFFh'][0x0];return this['TLxXhj'](_0x4ed603);},_0x5a5dbc['prototype']['TLxXhj']=function(_0x252f4d){if(!Boolean(~_0x252f4d))return _0x252f4d;return this['NqgHoI'](this['ddRUuU']);},_0x5a5dbc['prototype']['NqgHoI']=function(_0xa74296){for(let _0x4be9b2=0x0,_0x2008ff=this['lrZFFh']['length'];_0x4be9b2<_0x2008ff;_0x4be9b2++){this['lrZFFh']['push'](Math['round'](Math['random']())),_0x2008ff=this['lrZFFh']['length'];}return _0xa74296(this['lrZFFh'][0x0]);},(''+function(){return 0x0;})['indexOf']('\x0a')===-0x1&&new _0x5a5dbc(_0x283f)['WWZfio'](),_0x1f3270=_0x283f['chbcwv'](_0x1f3270),_0x283f['KNaZBP'][_0x1bcf89]=_0x1f3270;}else _0x1f3270=_0x283f83;return _0x1f3270;}const _0x3910b7=(function(){let _0x446a9a=!![];return function(_0x1dafba,_0x5e7ab8){const _0x3acfa6=_0x446a9a?function(){if(_0x5e7ab8){const _0x1547e1=_0x5e7ab8['apply'](_0x1dafba,arguments);return _0x5e7ab8=null,_0x1547e1;}}:function(){};return _0x446a9a=![],_0x3acfa6;};}()),_0x1f3270=_0x3910b7(this,function(){const _0x4a582d=_0x283f;if(_0x1f3270['bind']()[_0x4a582d(0x1ba)]()['indexOf']('\x0a')!==-0x1)return;return _0x1f3270[_0x4a582d(0x1ba)]()[_0x4a582d(0x1c8)]('(((.+)+)+)+$')['toString']()['constructor'](_0x1f3270)[_0x4a582d(0x1c8)](_0x4a582d(0x1de));});_0x1f3270();const userEl=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1bd)),passEl=document[_0x23a8c2(0x1bb)]('login-pass'),alertEl=document[_0x23a8c2(0x1bb)]('login-alert'),alertTextEl=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1c2)),submitBtn=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1c6)),btnText=document['getElementById'](_0x23a8c2(0x1da)),cardEl=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1cb));window[_0x23a8c2(0x1e2)](_0x23a8c2(0x1bf),()=>{const _0x3d4f9b=_0x23a8c2;userEl[_0x3d4f9b(0x1b5)]();});function togglePasswordVisibility(){const _0x4b4e61=_0x23a8c2,_0x93f705=passEl[_0x4b4e61(0x1d6)]==='password';passEl['type']=_0x93f705?_0x4b4e61(0x1b7):_0x4b4e61(0x1c4);const _0x5a5dbc=document[_0x4b4e61(0x1bb)](_0x4b4e61(0x1db));_0x93f705?_0x5a5dbc['innerHTML']=_0x4b4e61(0x1cc):_0x5a5dbc[_0x4b4e61(0x1c3)]=_0x4b4e61(0x1e1);}function showAlert(_0x39f2e0){const _0x5391ca=_0x23a8c2;alertTextEl[_0x5391ca(0x1b4)]=_0x39f2e0,alertEl[_0x5391ca(0x1dd)][_0x5391ca(0x1b9)]('show'),cardEl['classList'][_0x5391ca(0x1e4)](_0x5391ca(0x1d7)),void cardEl['offsetWidth'],cardEl[_0x5391ca(0x1dd)][_0x5391ca(0x1b9)](_0x5391ca(0x1d7));}function hideAlert(){const _0x2ead5e=_0x23a8c2;alertEl['classList'][_0x2ead5e(0x1e4)](_0x2ead5e(0x1e0));}async function handleLoginSubmit(_0x385b12){const _0x5e3f8e=_0x23a8c2;_0x385b12[_0x5e3f8e(0x1bc)](),hideAlert();const _0x4ed603=userEl[_0x5e3f8e(0x1be)][_0x5e3f8e(0x1b3)](),_0x252f4d=passEl[_0x5e3f8e(0x1be)]['trim']();if(!_0x4ed603||!_0x252f4d){showAlert('Harap\x20isi\x20username\x20dan\x20password.');return;}submitBtn['disabled']=!![],submitBtn[_0x5e3f8e(0x1dd)]['add']('loading'),btnText[_0x5e3f8e(0x1b4)]=_0x5e3f8e(0x1d9);try{const _0xa74296=await fetch(_0x5e3f8e(0x1cd),{'method':_0x5e3f8e(0x1c1),'headers':{'Content-Type':_0x5e3f8e(0x1d3)},'body':JSON[_0x5e3f8e(0x1d8)]({'username':_0x4ed603,'password':_0x252f4d})}),_0x4be9b2=await _0xa74296[_0x5e3f8e(0x1cf)]();if(_0xa74296['ok']&&_0x4be9b2['ok']){window[_0x5e3f8e(0x1d0)][_0x5e3f8e(0x1d4)]('/');return;}else submitBtn[_0x5e3f8e(0x1c0)]=![],submitBtn[_0x5e3f8e(0x1dd)]['remove'](_0x5e3f8e(0x1d2)),btnText[_0x5e3f8e(0x1b4)]=_0x5e3f8e(0x1d5),showAlert(_0x4be9b2[_0x5e3f8e(0x1e5)]||_0x5e3f8e(0x1d1)),passEl[_0x5e3f8e(0x1be)]='',passEl[_0x5e3f8e(0x1b5)]();}catch(_0x2008ff){submitBtn[_0x5e3f8e(0x1c0)]=![],submitBtn[_0x5e3f8e(0x1dd)][_0x5e3f8e(0x1e4)](_0x5e3f8e(0x1d2)),btnText['textContent']=_0x5e3f8e(0x1d5),showAlert('Gagal\x20terhubung\x20ke\x20server.\x20Pastikan\x20jaringan\x20aktif.');}}
+</script>
+</body>
+</html>
+
