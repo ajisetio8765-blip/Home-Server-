@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ==============================================================================
 # LenzNode — Unified Launcher & Manager (Native Termux Edition)
-# Mengelola: Web Dashboard Panel (Port 8080), SSH Server (Port 2222), & Cloudflare Tunnel
+# Mengelola: Web Dashboard Panel (Port 8080), SSH Server (Port 2222), 9Router & Cloudflare Tunnel
 # 100% Native Termux — Ringan, Cepat, Tanpa PRootDistro (Zero Overhead)
 # ==============================================================================
 
@@ -32,6 +32,8 @@ export NODE_OPTIONS="--max-old-space-size=64 --optimize-for-size --expose-gc ${N
 DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$DIR/panel/server.js" ]; then
     SERVER_DIR="$DIR"
+elif [ -d "$HOME/Home-Server-" ]; then
+    SERVER_DIR="$HOME/Home-Server-"
 elif [ -d "$HOME/DalangStore" ]; then
     SERVER_DIR="$HOME/DalangStore"
 elif [ -d "$HOME/panel" ]; then
@@ -68,6 +70,13 @@ get_local_ip() {
 
 is_port_active() {
     local port="$1"
+    # Penanganan Khusus SSH (Android 10+ SELinux Bypass)
+    if [ "$port" = "2222" ]; then
+        pgrep -f "sshd" >/dev/null 2>&1 && return 0
+    fi
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -i ":${port}" >/dev/null 2>&1 && return 0
+    fi
     if command -v netstat >/dev/null 2>&1; then
         netstat -tuln 2>/dev/null | grep -q ":${port}[[:space:]]" && return 0
     fi
@@ -84,7 +93,6 @@ is_port_active() {
 # 0. SISTEM AUTO-UPDATE SAAT STARTUP (GitHub Auto-Sync)
 # -----------------------------------------------------------------------------
 check_and_apply_update() {
-    # Cegah loop jika skrip baru saja di-update dan dieksekusi ulang
     if [ "$_DALANGSTORE_UPDATED" = "1" ]; then
         echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}sistem sudah versi terbaru${NC}"
         return 0
@@ -93,20 +101,17 @@ check_and_apply_update() {
     local GIT_DIR="$SERVER_DIR/.git"
     local REPO_URL="https://github.com/ajisetio8765-blip/Home-Server-.git"
 
-    # Jika folder belum terhubung dengan Git, hubungkan otomatis
     if [ ! -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
         (cd "$SERVER_DIR" && git init -q 2>/dev/null && git remote add origin "$REPO_URL" 2>/dev/null) || true
     fi
 
     if [ -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
-        # Cek update dengan batas waktu cepat (3 detik) agar tidak hang jika offline
         if git -C "$SERVER_DIR" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=3 fetch origin main --depth=1 >/dev/null 2>&1; then
             local LOCAL_HASH=$(git -C "$SERVER_DIR" rev-parse HEAD 2>/dev/null)
             local REMOTE_HASH=$(git -C "$SERVER_DIR" rev-parse origin/main 2>/dev/null)
             if [ -n "$LOCAL_HASH" ] && [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
                 echo -e "  ${CYAN}│${NC}  ${GREEN}⬆${NC}  update      ${GREEN}versi baru ditemukan! Memperbarui...${NC}"
 
-                # Amankan kredensial akun agar password tidak ter-reset
                 local AUTH_BACKUP=""
                 [ -f "$SERVER_DIR/panel/auth-config.json" ] && AUTH_BACKUP=$(cat "$SERVER_DIR/panel/auth-config.json" 2>/dev/null)
 
@@ -115,14 +120,12 @@ check_and_apply_update() {
                 [ -n "$AUTH_BACKUP" ] && echo "$AUTH_BACKUP" > "$SERVER_DIR/panel/auth-config.json" 2>/dev/null || true
                 chmod +x "$SERVER_DIR/"*.sh "$SERVER_DIR/scripts/"*.sh 2>/dev/null || true
 
-                # Sinkronkan skrip starter di $HOME jika ada
                 if [ -d "$HOME" ] && [ -f "$SERVER_DIR/start.sh" ] && [ "$SERVER_DIR" != "$HOME" ]; then
                     cp -f "$SERVER_DIR/start.sh" "$HOME/start.sh" 2>/dev/null && chmod +x "$HOME/start.sh" 2>/dev/null || true
                 fi
 
                 echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}berhasil diperbarui ke versi terbaru!${NC}"
 
-                # Hapus lock & jalankan skrip terbaru secara mulus
                 rm -f "$LOG_DIR/.start.lock" 2>/dev/null || true
                 unset _DALANGSTORE_STARTING
                 export _DALANGSTORE_UPDATED=1
@@ -137,7 +140,7 @@ check_and_apply_update() {
 }
 
 # -----------------------------------------------------------------------------
-# 1. KONTROL SSH SERVER (Port 2222) — NATIVE TERMUX (TANPA PROOT)
+# 1. KONTROL SSH SERVER (Port 2222)
 # -----------------------------------------------------------------------------
 start_ssh() {
     if is_port_active 2222; then
@@ -145,7 +148,6 @@ start_ssh() {
         return 0
     fi
 
-    # Pastikan host key OpenSSH telah digenerate (mencegah error pada instalasi baru)
     if [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
         ssh-keygen -A >/dev/null 2>&1 || true
     fi
@@ -166,9 +168,6 @@ stop_ssh() {
     pkill -9 -f "sshd" 2>/dev/null || true
     echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  ssh         ${DIM}stopped${NC}"
 }
-
-start_vps() { start_ssh "$@"; }
-stop_vps() { stop_ssh "$@"; }
 
 # -----------------------------------------------------------------------------
 # 2. KONTROL WEB DASHBOARD PANEL (Port 8080)
@@ -216,7 +215,50 @@ stop_panel() {
 }
 
 # -----------------------------------------------------------------------------
-# 3. KONTROL CLOUDFLARE PUBLIC TUNNEL
+# 3. KONTROL 9ROUTER MODULE
+# -----------------------------------------------------------------------------
+start_router() {
+    local ROUTER_SCRIPT="$SERVER_DIR/scripts/start-9router.sh"
+    if [ -f "$ROUTER_SCRIPT" ]; then
+        bash "$ROUTER_SCRIPT" "$1"
+        return 0
+    fi
+
+    # Fallback Auto-Detect jika file start-9router.sh belum ada
+    local ROUTER_DIR=""
+    if [ -d "$SERVER_DIR/9router" ]; then
+        ROUTER_DIR="$SERVER_DIR/9router"
+    elif [ -d "$SERVER_DIR/scripts/9router" ]; then
+        ROUTER_DIR="$SERVER_DIR/scripts/9router"
+    elif [ -d "$HOME/9router" ]; then
+        ROUTER_DIR="$HOME/9router"
+    fi
+
+    if [ -n "$ROUTER_DIR" ]; then
+        cd "$ROUTER_DIR" || return 1
+        [ ! -d "node_modules" ] && npm install --silent >/dev/null 2>&1
+        if command -v pm2 >/dev/null 2>&1; then
+            pm2 start index.js --name "9router" >/dev/null 2>&1 || pm2 restart 9router >/dev/null 2>&1
+            pm2 save >/dev/null 2>&1 || true
+        else
+            nohup node index.js > "$LOG_DIR/9router.log" 2>&1 &
+        fi
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  9router     ${DIM}online (PM2)${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${RED}✗${NC}  9router     ${DIM}folder 9router tidak ditemukan${NC}"
+    fi
+}
+
+stop_router() {
+    if command -v pm2 >/dev/null 2>&1; then
+        pm2 stop 9router >/dev/null 2>&1 || true
+    fi
+    pkill -f "node.*/9router" 2>/dev/null || true
+    echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  9router     ${DIM}stopped${NC}"
+}
+
+# -----------------------------------------------------------------------------
+# 4. KONTROL CLOUDFLARE PUBLIC TUNNEL
 # -----------------------------------------------------------------------------
 ensure_cloudflare_tunnel() {
     local TUNNEL_FILE="$LOG_DIR/tunnel-url.txt"
@@ -248,7 +290,6 @@ ensure_cloudflare_tunnel() {
         disown $! 2>/dev/null || true
     fi
 
-    # Tunggu dan verifikasi handshake tunnel Cloudflare (Health-Check Nyata)
     local URL=""
     for i in 1 2 3 4 5 6 7 8 9 10; do
         if [ -f "$TUNNEL_FILE" ]; then
@@ -265,7 +306,6 @@ ensure_cloudflare_tunnel() {
         sleep 0.5
     done
 
-    # Verifikasi HTTP health check jika curl tersedia
     local VERIFIED=0
     if [ -n "$URL" ] && command -v curl >/dev/null 2>&1; then
         for j in 1 2 3; do
@@ -299,10 +339,9 @@ stop_tunnel() {
 }
 
 # -----------------------------------------------------------------------------
-# 4. START ALL, STOP ALL, & STATUS
+# 5. START ALL, STOP ALL, & STATUS
 # -----------------------------------------------------------------------------
 ask_operational_mode() {
-    # Lewati prompt jika sudah ditentukan via argumen atau env var
     if [ -n "$LENZ_ENABLE_TUNNEL" ]; then
         return 0
     fi
@@ -314,13 +353,11 @@ ask_operational_mode() {
         export LENZ_ENABLE_TUNNEL="0"
         return 0
     fi
-    # Jika mode daemon / background, default ke lokal bila tidak di-set
     if [ "$1" = "bg" ] || [ "$1" = "daemon" ] || [ "$1" = "-d" ] || [ "$1" = "--bg" ]; then
         export LENZ_ENABLE_TUNNEL="${LENZ_ENABLE_TUNNEL:-1}"
         return 0
     fi
 
-    # Tampilan Menu Pemilihan Interaktif
     echo ""
     echo -e "  ${CYAN}╭─${NC} ${BOLD}DalangStore Mode Selection${NC} ${CYAN}────────────────────${NC}"
     echo -e "  ${CYAN}│${NC}  Pilih mode operasional server:"
@@ -357,7 +394,6 @@ start_all() {
     local LAST_START_FILE="$LOG_DIR/.last_start"
     local NOW=$(date +%s 2>/dev/null || echo 0)
 
-    # Concurrency guard
     if [ -f "$LOCK_FILE" ]; then
         local RUNNING_PID=$(cat "$LOCK_FILE" 2>/dev/null)
         if [ -n "$RUNNING_PID" ] && kill -0 "$RUNNING_PID" 2>/dev/null && [ "$RUNNING_PID" != "$$" ]; then
@@ -372,7 +408,6 @@ start_all() {
         rm -f "$LOCK_FILE" 2>/dev/null || true
     fi
 
-    # Debounce guard
     if [ "$1" != "force" ] && [ -f "$LAST_START_FILE" ]; then
         local LAST_TIME=$(cat "$LAST_START_FILE" 2>/dev/null || echo 0)
         local DIFF=$((NOW - LAST_TIME))
@@ -432,6 +467,7 @@ stop_all() {
     echo -e "  ${CYAN}╭─${NC} ${BOLD}DalangStore${NC} ${CYAN}──────────────────────────────${NC}"
     stop_panel
     stop_ssh
+    stop_router
     stop_tunnel
     echo -e "  ${CYAN}╰─ Stopped ───────────────────────────────${NC}\n"
 }
@@ -442,6 +478,11 @@ status_all() {
     LOCAL_IP=$(get_local_ip)
     is_port_active "${PANEL_PORT:-8080}" && echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}" || echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  panel       ${DIM}stopped${NC}"
     is_port_active 2222 && echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port 2222${NC}" || echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  ssh         ${DIM}stopped${NC}"
+    
+    if command -v pm2 >/dev/null 2>&1 && pm2 describe 9router >/dev/null 2>&1; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  9router     ${DIM}online (PM2)${NC}"
+    fi
+
     if pgrep -x cloudflared >/dev/null 2>&1; then
         echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
     else
@@ -476,6 +517,7 @@ case "$1" in
         check_and_apply_update "force"
         echo -e "  ${CYAN}╰───────────────────────────────────────────${NC}\n"
         ;;
+        
     stop)
         stop_all
         ;;
@@ -503,7 +545,10 @@ case "$1" in
         stop_tunnel
         ;;
     router|9router)
-        bash "$SERVER_DIR/scripts/start-9router.sh" "$2"
+        start_router "$2"
+        ;;
+    stop-router|stop-9router)
+        stop_router
         ;;
     logs)
         tail -f "$PANEL_LOG"
