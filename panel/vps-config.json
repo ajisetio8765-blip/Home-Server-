@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "distro": "native",
+  "username": "termux",
+  "port": 2222,
+  "publicHost": null,
+  "publicPort": null,
+  "publicCommand": null
+}
