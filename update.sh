@@ -16,7 +16,7 @@ echo -e "${CYAN}======================================================${NC}"
 echo -e "${CYAN}       MINI SERVER — AUTO UPDATE SYSTEM          ${NC}"
 echo -e "${CYAN}======================================================${NC}"
 
-REPO_URL="https://github.com/Lenzx999/LenzNode.git"
+REPO_URL="https://github.com/ajisetio8765-blip/Home-Server-.git"
 ZIP_URL="https://github.com/Lenzx999/LenzNode/archive/refs/heads/main.zip"
 
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
