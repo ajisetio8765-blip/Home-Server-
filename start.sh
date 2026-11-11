@@ -91,7 +91,7 @@ check_and_apply_update() {
     fi
 
     local GIT_DIR="$SERVER_DIR/.git"
-    local REPO_URL="https://github.com/Lenzx999/LenzNode.git"
+    local REPO_URL="https://github.com/ajisetio8765-blip/Home-Server-.git"
 
     # Jika folder belum terhubung dengan Git, hubungkan otomatis
     if [ ! -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
